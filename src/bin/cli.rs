@@ -2,16 +2,9 @@ use anyhow::{Result, anyhow};
 use clap::{Parser, Subcommand};
 use secrecy::{ExposeSecret, SecretString};
 
-mod crypto;
-mod db;
-mod domain;
-mod dto;
-mod models;
-mod vault;
-
-use domain::*;
-use dto::*;
-use vault::VaultService;
+use voxide::domain::*;
+use voxide::dto::*;
+use voxide::vault::VaultService;
 
 /// Prompt for master password and unlock vault
 async fn unlock_vault(vault_path: &str) -> Result<(VaultService, SecretString)> {
@@ -55,6 +48,14 @@ enum Commands {
     Export { path: String },
     Import { path: String },
 }
+
+// TODO: Improve error handling UX
+// TODO: Add args tags in Clap for better UX
+// TODO: Add unit/integration tests
+// TODO: Add docs explaining all the security considerations mentioned in the Copilot chat and not only
+// TODO (nth): Expose the app also as a TUI (using Ratatui)
+// TODO (nth): Add CI and pre-commit hooks
+// TODO (nth): Add support for multiple vaults (e.g. for work/personal accounts)
 
 #[tokio::main]
 async fn main() -> Result<()> {
