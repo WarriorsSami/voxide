@@ -143,7 +143,14 @@ enum Commands {
         long_about = "Display all service/username pairs stored in the vault.\n\
                             Passwords are not shown, only metadata."
     )]
-    List,
+    List {
+        #[arg(
+            short,
+            long,
+            help = "Filter entries by service name or username (case-insensitive)"
+        )]
+        pattern: Option<String>,
+    },
 
     /// Delete an entry from the vault
     #[command(long_about = "Permanently remove a password entry.\n\
@@ -200,7 +207,7 @@ async fn main() {
         Commands::Init => cmd_init(&cli.vault).await,
         Commands::Add { service, username } => cmd_add(&cli.vault, service, username).await,
         Commands::Get { service, username } => cmd_get(&cli.vault, service, username).await,
-        Commands::List => cmd_list(&cli.vault).await,
+        Commands::List { pattern } => cmd_list(&cli.vault, pattern).await,
         Commands::Delete { service, username } => cmd_delete(&cli.vault, service, username).await,
         Commands::ChangeMaster => cmd_change_master(&cli.vault).await,
         Commands::Export { path } => cmd_export(&cli.vault, path).await,
@@ -349,12 +356,12 @@ async fn cmd_get(vault: &str, service: String, username: String) -> Result<()> {
     Ok(())
 }
 
-async fn cmd_list(vault: &str) -> Result<()> {
+async fn cmd_list(vault: &str, pattern: Option<String>) -> Result<()> {
     // Unlock vault with master password
     let (vault_service, _master_password) = unlock_vault(vault).await?;
 
     let entries = vault_service
-        .list()
+        .list(pattern)
         .await
         .context("Failed to retrieve entry list")?;
 

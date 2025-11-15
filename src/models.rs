@@ -64,7 +64,7 @@ pub struct NewEntry {
 }
 
 /// Listing tuple for list command
-#[derive(Debug)]
+#[derive(Debug, FromRow)]
 pub struct EntryPair {
     pub service: String,
     pub username: String,

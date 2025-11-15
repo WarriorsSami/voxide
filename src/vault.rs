@@ -147,8 +147,8 @@ impl VaultService {
     }
 
     /// List all entries (service/username pairs only)
-    pub async fn list(&self) -> VaultResult<Vec<EntryListItemDto>> {
-        let pairs = EntryRepo::list_pairs(&self.pool).await?;
+    pub async fn list(&self, pattern: Option<String>) -> VaultResult<Vec<EntryListItemDto>> {
+        let pairs = EntryRepo::list_pairs(&self.pool, pattern).await?;
         Ok(pairs
             .into_iter()
             .map(|p| EntryListItemDto {

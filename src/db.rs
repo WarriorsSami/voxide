@@ -105,21 +105,24 @@ impl EntryRepo {
         Ok(result.rows_affected())
     }
 
-    pub async fn list_pairs(pool: &Pool<Sqlite>) -> VaultResult<Vec<EntryPair>> {
-        let rows = sqlx::query_as::<_, (String, String, String)>(
-            "SELECT service, username, created_at FROM entries ORDER BY service, username",
-        )
+    pub async fn list_pairs(
+        pool: &Pool<Sqlite>,
+        pattern: Option<String>,
+    ) -> VaultResult<Vec<EntryPair>> {
+        let rows = match pattern {
+            Some(pattern) => sqlx::query_as::<_, EntryPair>(
+                "SELECT service, username, created_at FROM entries
+                WHERE service LIKE ?1 OR username LIKE ?1 COLLATE NOCASE ORDER BY service, username",
+            )
+                .bind(format!("%{pattern}%")),
+            None => sqlx::query_as::<_, EntryPair>(
+                "SELECT service, username, created_at FROM entries ORDER BY service, username",
+            )
+        }
         .fetch_all(pool)
         .await?;
 
-        Ok(rows
-            .into_iter()
-            .map(|(service, username, created_at)| EntryPair {
-                service,
-                username,
-                created_at,
-            })
-            .collect())
+        Ok(rows)
     }
 
     pub async fn list_all(pool: &Pool<Sqlite>) -> VaultResult<Vec<Entry>> {
