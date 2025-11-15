@@ -9,10 +9,8 @@ use chacha20poly1305::{
 use rand::RngCore;
 use secrecy::{ExposeSecret, SecretBox, SecretString};
 
-use crate::crypto_types::{
-    AssociatedData, Ciphertext, EncryptionKey, Nonce, Plaintext, Salt,
-};
-use crate::errors::{VaultResult, VaultError};
+use crate::crypto_types::{AssociatedData, Ciphertext, EncryptionKey, Nonce, Plaintext, Salt};
+use crate::errors::{VaultError, VaultResult};
 use crate::models::KdfParams;
 
 const VERIFIER_PLAINTEXT: &[u8] = b"voxide-ok";
@@ -29,18 +27,19 @@ pub fn derive_key(
         .p_cost(params.p_cost)
         .output_len(params.key_len as usize)
         .build()
-        .map_err(|e| VaultError::KdfParam(e.to_string()))?;
+        .map_err(|e| VaultError::KdfFailed(format!("Invalid KDF parameters: {}", e)))?;
 
     let argon2 = Argon2::new(argon2::Algorithm::Argon2id, Version::V0x13, argon2_params);
 
     let salt_string = SaltString::encode_b64(salt.as_bytes())
-        .map_err(|e| VaultError::KdfParam(format!("Invalid salt: {}", e)))?;
+        .map_err(|e| VaultError::KdfFailed(format!("Invalid salt: {}", e)))?;
 
     let hash = argon2
         .hash_password(password.expose_secret().as_bytes(), &salt_string)
         .map_err(|e| VaultError::KdfFailed(e.to_string()))?;
 
-    let hash_output = hash.hash
+    let hash_output = hash
+        .hash
         .ok_or_else(|| VaultError::KdfFailed("No hash output".to_string()))?;
 
     let key_bytes = hash_output.as_bytes();

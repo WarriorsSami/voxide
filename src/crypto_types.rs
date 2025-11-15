@@ -19,7 +19,7 @@ impl Salt {
     /// Try to parse salt from a byte slice
     pub fn try_from_slice(slice: &[u8]) -> VaultResult<Self> {
         if slice.len() != 16 {
-            return Err(VaultError::KdfParam(format!(
+            return Err(VaultError::KdfFailed(format!(
                 "Invalid salt length: expected 16 bytes, got {}",
                 slice.len()
             )));
@@ -254,4 +254,3 @@ mod tests {
         assert!(!ct.is_empty());
     }
 }
-

@@ -139,8 +139,10 @@ enum Commands {
     },
 
     /// List all entries in the vault
-    #[command(long_about = "Display all service/username pairs stored in the vault.\n\
-                            Passwords are not shown, only metadata.")]
+    #[command(
+        long_about = "Display all service/username pairs stored in the vault.\n\
+                            Passwords are not shown, only metadata."
+    )]
     List,
 
     /// Delete an entry from the vault
@@ -157,8 +159,10 @@ enum Commands {
     },
 
     /// Change the master password
-    #[command(long_about = "Update your master password and re-encrypt all entries.\n\
-                            This operation is atomic: if it fails, your vault remains unchanged.")]
+    #[command(
+        long_about = "Update your master password and re-encrypt all entries.\n\
+                            This operation is atomic: if it fails, your vault remains unchanged."
+    )]
     ChangeMaster,
 
     /// Export vault to an encrypted backup file
@@ -470,15 +474,12 @@ async fn cmd_change_master(vault: &str) -> Result<()> {
 
     println!("\nRe-encrypting all entries...");
 
-    vault_service
-        .change_master(dto)
-        .await
-        .map_err(|e| {
-            anyhow!(
-                "{}\n\nYour vault data remains secure and unchanged.",
-                e.user_message()
-            )
-        })?;
+    vault_service.change_master(dto).await.map_err(|e| {
+        anyhow!(
+            "{}\n\nYour vault data remains secure and unchanged.",
+            e.user_message()
+        )
+    })?;
 
     print_success("Master password changed successfully!");
     println!("\n⚠️  Important: You must use the new password for all future operations.");

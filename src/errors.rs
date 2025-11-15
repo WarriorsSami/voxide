@@ -1,7 +1,6 @@
-use argon2::password_hash::Error as ArgonError;
 use serde_json::Error as SerdeError;
 use sqlx::error::Error as SqlxError;
-use std::io;
+use std::io::Error as IoError;
 use thiserror::Error;
 
 pub type VaultResult<T> = Result<T, VaultError>;
@@ -20,8 +19,6 @@ pub enum VaultError {
     EntryNotFound,
     #[error("Invalid nonce length")]
     InvalidNonce,
-    #[error("KDF parameter error: {0}")]
-    KdfParam(String),
     #[error("KDF failed: {0}")]
     KdfFailed(String),
     #[error("Encryption failed")]
@@ -30,10 +27,16 @@ pub enum VaultError {
     DecryptFailed,
     #[error("Serialization error: {0}")]
     Serialization(String),
-    #[error("Database error: {0}")]
-    Database(String),
-    #[error("I/O error: {0}")]
-    Io(String),
+    #[error("Database error: {source}")]
+    Database {
+        #[from]
+        source: SqlxError,
+    },
+    #[error("IO error: {source}")]
+    Io {
+        #[from]
+        source: IoError,
+    },
     #[error("Internal error: {0}")]
     Internal(String),
 }
@@ -42,56 +45,40 @@ impl VaultError {
     /// Get user-facing error message with context and helpful guidance
     pub fn user_message(&self) -> String {
         match self {
-            Self::AlreadyInitialized => {
-                "Vault already initialized.\n\n\
+            Self::AlreadyInitialized => "Vault already initialized.\n\n\
                  The vault file already contains data.\n\
                  Use a different file path or delete the existing vault if you want to start fresh."
-                    .to_string()
-            }
-            Self::NotInitialized => {
-                "Vault not initialized.\n\n\
+                .to_string(),
+            Self::NotInitialized => "Vault not initialized.\n\n\
                  Initialize a new vault first with:\n\
                  voxide init"
-                    .to_string()
-            }
-            Self::AuthFailed => {
-                "Authentication failed: Incorrect master password.\n\n\
+                .to_string(),
+            Self::AuthFailed => "Authentication failed: Incorrect master password.\n\n\
                  The master password you entered does not match the vault.\n\
                  Please try again or check that you're using the correct vault file."
-                    .to_string()
-            }
-            Self::EntryExists => {
-                "Entry already exists.\n\n\
+                .to_string(),
+            Self::EntryExists => "Entry already exists.\n\n\
                  An entry with this service and username combination is already in the vault.\n\
                  To update it, delete the old entry first."
-                    .to_string()
-            }
-            Self::EntryNotFound => {
-                "Entry not found.\n\n\
+                .to_string(),
+            Self::EntryNotFound => "Entry not found.\n\n\
                  No password entry exists with this service and username combination.\n\
                  Use 'voxide list' to see all stored entries."
-                    .to_string()
-            }
-            Self::DecryptFailed => {
-                "Decryption failed.\n\n\
+                .to_string(),
+            Self::DecryptFailed => "Decryption failed.\n\n\
                  The encrypted data could not be decrypted. This may indicate:\n\
                  - Data tampering or corruption\n\
                  - Wrong master password\n\
                  - Vault file damage"
-                    .to_string()
-            }
-            Self::EncryptFailed => {
-                "Encryption failed.\n\n\
+                .to_string(),
+            Self::EncryptFailed => "Encryption failed.\n\n\
                  Unable to encrypt the data. This is an internal error.\n\
                  Please try again or report this issue."
-                    .to_string()
-            }
-            Self::InvalidNonce => {
-                "Invalid nonce length.\n\n\
+                .to_string(),
+            Self::InvalidNonce => "Invalid nonce length.\n\n\
                  The encrypted data has an invalid nonce. The vault may be corrupted."
-                    .to_string()
-            }
-            Self::KdfParam(msg) | Self::KdfFailed(msg) => {
+                .to_string(),
+            Self::KdfFailed(msg) => {
                 format!(
                     "Key derivation failed: {}\n\n\
                      Unable to derive encryption key from master password.\n\
@@ -106,14 +93,14 @@ impl VaultError {
                     msg
                 )
             }
-            Self::Database(msg) => {
+            Self::Database { source: msg } => {
                 format!(
                     "Database error: {}\n\n\
                      An error occurred while accessing the vault database.",
                     msg
                 )
             }
-            Self::Io(msg) => {
+            Self::Io { source: msg } => {
                 format!(
                     "I/O error: {}\n\n\
                      Unable to read or write vault files.",
@@ -127,23 +114,8 @@ impl VaultError {
     }
 }
 
-impl From<SqlxError> for VaultError {
-    fn from(e: SqlxError) -> Self {
-        Self::Database(e.to_string())
-    }
-}
 impl From<SerdeError> for VaultError {
     fn from(e: SerdeError) -> Self {
         Self::Serialization(e.to_string())
-    }
-}
-impl From<ArgonError> for VaultError {
-    fn from(e: ArgonError) -> Self {
-        Self::KdfFailed(e.to_string())
-    }
-}
-impl From<io::Error> for VaultError {
-    fn from(e: io::Error) -> Self {
-        Self::Io(e.to_string())
     }
 }

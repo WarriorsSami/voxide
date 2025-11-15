@@ -7,7 +7,7 @@ use time::OffsetDateTime;
 /// Create a SQLite connection pool for the vault database
 pub async fn create_pool(path: &str) -> VaultResult<Pool<Sqlite>> {
     let url = format!("sqlite://{}?mode=rwc", path);
-    SqlitePool::connect(&url).await.map_err(VaultError::from)
+    Ok(SqlitePool::connect(&url).await?)
 }
 
 /// Ensure schema is initialized (run migrations)
@@ -15,7 +15,7 @@ pub async fn ensure_schema(pool: &Pool<Sqlite>) -> VaultResult<()> {
     sqlx::migrate!("./migrations")
         .run(pool)
         .await
-        .map_err(|e| VaultError::Database(e.to_string()))?;
+        .map_err(|e| VaultError::Internal(e.to_string()))?;
     Ok(())
 }
 
@@ -26,8 +26,7 @@ impl MetaRepo {
     pub async fn get(pool: &Pool<Sqlite>) -> VaultResult<Option<Meta>> {
         let meta = sqlx::query_as::<_, Meta>("SELECT * FROM meta LIMIT 1")
             .fetch_optional(pool)
-            .await
-            .map_err(VaultError::from)?;
+            .await?;
         Ok(meta)
     }
 
@@ -48,8 +47,7 @@ impl MetaRepo {
         .bind(metadata.verifier_nonce)
         .bind(metadata.verifier_ct)
         .execute(pool)
-        .await
-        .map_err(VaultError::from)?;
+        .await?;
 
         Ok(())
     }
@@ -70,8 +68,7 @@ impl EntryRepo {
         .bind(service)
         .bind(username)
         .fetch_optional(pool)
-        .await
-        .map_err(VaultError::from)?;
+        .await?;
         Ok(entry)
     }
 
@@ -94,8 +91,7 @@ impl EntryRepo {
         .bind(&timestamp)
         .bind(&timestamp)
         .execute(pool)
-        .await
-        .map_err(VaultError::from)?;
+        .await?;
 
         Ok(())
     }
@@ -105,8 +101,7 @@ impl EntryRepo {
             .bind(service)
             .bind(username)
             .execute(pool)
-            .await
-            .map_err(VaultError::from)?;
+            .await?;
         Ok(result.rows_affected())
     }
 
@@ -115,8 +110,7 @@ impl EntryRepo {
             "SELECT service, username, created_at FROM entries ORDER BY service, username",
         )
         .fetch_all(pool)
-        .await
-        .map_err(VaultError::from)?;
+        .await?;
 
         Ok(rows
             .into_iter()
@@ -131,8 +125,7 @@ impl EntryRepo {
     pub async fn list_all(pool: &Pool<Sqlite>) -> VaultResult<Vec<Entry>> {
         let entries = sqlx::query_as::<_, Entry>("SELECT * FROM entries")
             .fetch_all(pool)
-            .await
-            .map_err(VaultError::from)?;
+            .await?;
         Ok(entries)
     }
 }

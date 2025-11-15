@@ -44,7 +44,7 @@ impl VaultService {
         let (verifier_nonce, verifier_ct) = create_verifier(&key)?;
 
         // Store metadata
-        let kdf_params_json = serde_json::to_string(&params).map_err(VaultError::from)?;
+        let kdf_params_json = serde_json::to_string(&params)?;
 
         let metadata = InitMetaDto {
             version: 1,
@@ -100,7 +100,7 @@ impl VaultService {
             password: dto.password.into_inner(),
             notes: dto.notes.map(|n| n.into_inner()),
         };
-        let payload_json = Zeroizing::new(serde_json::to_vec(&payload).map_err(VaultError::from)?);
+        let payload_json = Zeroizing::new(serde_json::to_vec(&payload)?);
 
         // Generate nonce and AD
         let nonce = generate_nonce();
@@ -141,7 +141,7 @@ impl VaultService {
         let plaintext = open(&key, &nonce, &ciphertext, &ad)?;
 
         // Parse payload
-        let payload: EntryPayload = serde_json::from_slice(plaintext.as_bytes()).map_err(VaultError::from)?;
+        let payload: EntryPayload = serde_json::from_slice(plaintext.as_bytes())?;
 
         Ok(payload.into())
     }
@@ -191,7 +191,7 @@ impl VaultService {
         ensure_schema(&temp_pool).await?;
 
         // Insert new metadata
-        let kdf_params_json = serde_json::to_string(&params).map_err(VaultError::from)?;
+        let kdf_params_json = serde_json::to_string(&params)?;
 
         let metadata = InitMetaDto {
             version: 1,
@@ -230,7 +230,7 @@ impl VaultService {
         self.pool.close().await;
 
         // Atomic rename
-        fs::rename(&temp_path, &dto.vault_path).map_err(|e| VaultError::Io(e.to_string()))?;
+        fs::rename(&temp_path, &dto.vault_path)?;
 
         Ok(())
     }
@@ -252,10 +252,9 @@ impl VaultService {
         let export_data = ExportedVaultDto::from_vault_data(&meta, &entries);
 
         // Serialize to JSON and write to file
-        let json_str = serde_json::to_string_pretty(&export_data).map_err(VaultError::from)?;
-        let mut file = fs::File::create(&dto.export_path).map_err(VaultError::from)?;
-        file.write_all(json_str.as_bytes())
-            .map_err(|e| VaultError::Io(e.to_string()))?;
+        let json_str = serde_json::to_string_pretty(&export_data)?;
+        let mut file = fs::File::create(&dto.export_path)?;
+        file.write_all(json_str.as_bytes())?;
 
         Ok(())
     }
@@ -271,10 +270,8 @@ impl VaultService {
         }
 
         // Read and deserialize import file
-        let json_str =
-            fs::read_to_string(&dto.import_path).map_err(|e| VaultError::Io(e.to_string()))?;
-        let import_data: ExportedVaultDto =
-            serde_json::from_str(&json_str).map_err(VaultError::from)?;
+        let json_str = fs::read_to_string(&dto.import_path)?;
+        let import_data: ExportedVaultDto = serde_json::from_str(&json_str)?;
 
         // Decode and insert metadata
         let metadata = import_data
