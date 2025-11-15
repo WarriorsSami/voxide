@@ -1,3 +1,4 @@
+use crate::errors::{VaultError, VaultResult};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -37,8 +38,8 @@ pub struct Meta {
 }
 
 impl Meta {
-    pub fn kdf_params_parse(&self) -> anyhow::Result<KdfParams> {
-        Ok(serde_json::from_str(&self.kdf_params)?)
+    pub fn kdf_params_parse(&self) -> VaultResult<KdfParams> {
+        serde_json::from_str(&self.kdf_params).map_err(|e| VaultError::Serialization(e.to_string()))
     }
 }
 
