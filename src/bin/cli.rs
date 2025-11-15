@@ -191,10 +191,8 @@ enum Commands {
     },
 }
 
-// TODO: Add support for fuzzy search
-// TODO: Add unit/integration tests
-// TODO: Add benchmarks/profiling (both time and memory footprint)
 // TODO: Add docs explaining all the security considerations mentioned in the Copilot chat and not only
+// TODO (nth): Add benchmarks/profiling (both time and memory footprint)
 // TODO (nth): Expose the app also as a TUI (using Ratatui)
 // TODO (nth): Add CI and pre-commit hooks
 // TODO (nth): Add support for multiple vaults (e.g. for work/personal accounts)
