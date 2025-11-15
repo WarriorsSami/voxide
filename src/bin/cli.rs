@@ -195,6 +195,7 @@ enum Commands {
 // TODO (nth): Add benchmarks/profiling (both time and memory footprint)
 // TODO (nth): Expose the app also as a TUI (using Ratatui)
 // TODO (nth): Add CI and pre-commit hooks
+// TODO (nth): Add support for strong password generation
 // TODO (nth): Add support for multiple vaults (e.g. for work/personal accounts)
 
 #[tokio::main]
